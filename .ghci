@@ -1,0 +1,6 @@
+:set prompt "λ> "
+:set -XOverloadedStrings
+:set -XScopedTypeVariables
+:set -Wall
+:set -fno-warn-type-defaults
+:set -fno-warn-unused-do-bind

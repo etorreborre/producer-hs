@@ -1,0 +1,42 @@
+name: producer
+version: 0.1.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+copyright: Eric Torreborre
+maintainer: etorreborre@yahoo.com
+homepage: https://github.com/etorreborre/producer-hs#readme
+category: data
+author: Eric Torreborre
+extra-source-files:
+    README.md
+
+source-repository head
+    type: git
+    location: https://github.com/etorreborre/producer-hs
+
+library
+    exposed-modules:
+        Streaming.Producer
+    build-depends:
+        base >=4.7 && <5
+    default-language: Haskell2010
+    hs-source-dirs: src
+    ghc-options: -Wall
+
+test-suite producer-test
+    type: exitcode-stdio-1.0
+    main-is: test.hs
+    build-depends:
+        base -any,
+        producer -any,
+        QuickCheck -any,
+        tasty -any,
+        tasty-quickcheck -any,
+        tasty-hunit -any
+    default-language: Haskell2010
+    hs-source-dirs: test
+    other-modules:
+        Test.Streaming.Producer
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures
