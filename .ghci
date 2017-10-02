@@ -4,3 +4,4 @@
 :set -Wall
 :set -fno-warn-type-defaults
 :set -fno-warn-unused-do-bind
+:def hoogle \str -> return $ ":!hoogle --count=15 \"" ++ str ++ "\""

@@ -5,22 +5,33 @@
 
 module Test.Streaming.Producer where
 
+import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.List                 as DL
+import           Data.Proxy
 import           Prelude                   hiding (drop, filter, take)
 import           Streaming.Producer
 import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Checkers
+import           Test.QuickCheck.Classes
 import           Test.QuickCheck.Gen
+import           Test.QuickCheck.Property
 import           Test.Tasty
+import           Test.Tasty.Extensions
 import           Test.Tasty.HUnit          as H
 import           Test.Tasty.QuickCheck     as QC
 
 properties =
   testGroup "producer properties" [
-      prop_append
+      prop_show
+    , prop_append
     , prop_filter
     , prop_take
+    , prop_monad
   ]
+
+prop_show = prop "show" $ \(p :: ProducerInt) ->
+  show p == show (runList p)
 
 prop_append = testGroup "append" [
     eg "sanity check - runList done" $
@@ -34,7 +45,11 @@ prop_append = testGroup "append" [
   ]
 
 prop_filter = testGroup "filter" [
-  prop "filter ints" $ \p ->
+  prop "filter ints with tight predicate" $ \p ->
+    let f = (== 0) in
+      run (filter f p) == DL.filter f (run p)
+
+  , prop "filter ints with more accepting predicate" $ \p ->
     let f = (> 0) in
       run (filter f p) == DL.filter f (run p)
   ]
@@ -49,13 +64,25 @@ prop_take = testGroup "take, drop, chunk" [
   , prop "chunk values returns all values" $ \(p, n) ->
       run (chunk n p) == run p
 
-  , localOption (QuickCheckTests 1000) $ prop "chunk values returns chunks of size == n, excepted possibly for the last one" $ \(p, n) ->
+  , minTestsOk 1000 $ prop "chunk values returns chunks of size == n, excepted possibly for the last one" $ \(p, n) ->
      n <= 1     ||
      size p < n ||
      if n `rem` size p == 0 then
        all (\c -> n == length c) (runC (chunk n p))
      else
        all (\c -> n == length c) (dropLast (runC (chunk n p)))
+
+  , prop "chunk values for a producer with no elements" $ \n ->
+     null $ runC (chunk n done)
+
+  , prop "chunk values for a producer with one element" $ \(n, a) ->
+     runC (chunk n (one a)) == [[a]]
+  ]
+
+prop_monad = testGroup "laws" [
+    functorLaws     (Proxy :: Proxy ProducerIntIntInt)
+  , applicativeLaws (Proxy :: Proxy ProducerIntIntInt)
+  , monadLaws       (Proxy :: Proxy ProducerIntIntInt)
   ]
 
 -- HELPERS
@@ -65,6 +92,22 @@ instance Arbitrary ProducerInt where
       elements [done, one 1],
       more <$> arbitrary <*> arbitrary
     ]
+
+instance Arbitrary (Producer Identity (Int -> Int)) where
+  arbitrary = oneof [
+      elements [done, one (+1), one (* 2)],
+      more <$> arbitrary <*> arbitrary
+    ]
+
+instance Arbitrary ProducerIntIntInt where
+  arbitrary =
+    do a <- arbitrary
+       b <- arbitrary
+       c <- arbitrary
+       oneof [
+           elements [done, one (a :: Int, b :: Int, c :: Int)],
+           more <$> arbitrary <*> arbitrary
+         ]
 
 run :: ProducerInt -> [Int]
 run = runIdentity . runList
@@ -83,10 +126,11 @@ dropLast (a:as) = a : dropLast as
 runC :: ProducerInt -> [[Int]]
 runC = runIdentity . runChunks
 
-prop :: Testable a => String -> a -> TestTree
-prop = QC.testProperty
-
-eg :: String -> Bool -> TestTree
-eg name b = H.testCase name (assertBool name b)
-
 type ProducerInt = Producer Identity Int
+type ProducerIntIntInt = Producer Identity (Int, Int, Int)
+
+instance Eq ProducerInt where
+  (==) p1 p2 = runList p1 == runList p2
+
+instance EqProp ProducerInt where
+  (=-=) = eq
