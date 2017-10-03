@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitForAll      #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -134,7 +135,7 @@ dropStream n (More as next) =
 chunk :: Monad m => Int -> Producer m a -> Producer m a
 chunk = mapStream . chunkStream
 
-chunkStream :: Monad m => Int -> Stream m a -> Producer m a
+chunkStream :: forall m a . Monad m => Int -> Stream m a -> Producer m a
 chunkStream _ Done    = done
 chunkStream _ (One a) = one a
 chunkStream n (More as next) =
@@ -142,7 +143,7 @@ chunkStream n (More as next) =
   else
     go [] (More as next)
     where
-      --go :: [a] -> Stream m a -> Producer m a
+      go :: [a] -> Stream m a -> Producer m a
       go acc Done = emit acc
 
       go acc (One a) =
@@ -173,13 +174,13 @@ runListStream (More as next) =  (\x -> as ++ x) <$> runList next
 runChunks :: Monad m => Producer m a -> m [[a]]
 runChunks (Producer ma) = ma >>= runChunksStream
 
-runChunksStream :: Monad m => Stream m a -> m [[a]]
+runChunksStream :: forall m a . Monad m => Stream m a -> m [[a]]
 runChunksStream Done           = pure []
 runChunksStream (One a)        = pure [[a]]
 runChunksStream (More as next) =
   appendChunk <$> runChunks next
   where
-    -- appendChunk :: [[a]] -> [[a]]
+    appendChunk :: [[a]] -> [[a]]
     appendChunk []     = [as]
     appendChunk [[]]   = [as]
     appendChunk (c:cs) = as:c:cs
