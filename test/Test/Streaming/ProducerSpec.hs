@@ -2,8 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-
-module Test.Streaming.Producer where
+module Test.Streaming.ProducerSpec where
 
 import           Data.Foldable
 import           Data.Functor.Identity
@@ -21,19 +20,10 @@ import           Test.Tasty.Extensions
 import           Test.Tasty.HUnit          as H
 import           Test.Tasty.QuickCheck     as QC
 
-properties =
-  testGroup "producer properties" [
-      prop_show
-    , prop_append
-    , prop_filter
-    , prop_take
-    , prop_monad
-  ]
-
-prop_show = prop "show" $ \(p :: ProducerInt) ->
+test_show = prop "show" $ \(p :: ProducerInt) ->
   show p == show (runList p)
 
-prop_append = testGroup "append" [
+test_append = testGroup "append" [
     eg "sanity check - runList done" $
       null $ run done
 
@@ -44,7 +34,7 @@ prop_append = testGroup "append" [
       run (append p1 p2)  == (run p1 ++ run p2)
   ]
 
-prop_filter = testGroup "filter" [
+test_filter = testGroup "filter" [
   prop "filter ints with tight predicate" $ \p ->
     let f = (== 0) in
       run (filter f p) == DL.filter f (run p)
@@ -54,7 +44,7 @@ prop_filter = testGroup "filter" [
       run (filter f p) == DL.filter f (run p)
   ]
 
-prop_take = testGroup "take, drop, chunk" [
+test_take = testGroup "take, drop, chunk" [
     prop "take values" $ \(p, n) ->
       run (take n p) == DL.take n (run p)
 
@@ -79,7 +69,7 @@ prop_take = testGroup "take, drop, chunk" [
      runC (chunk n (one a)) == [[a]]
   ]
 
-prop_monad = testGroup "laws" [
+test_monad = testGroup "laws" [
     functorLaws     (Proxy :: Proxy ProducerIntIntInt)
   , applicativeLaws (Proxy :: Proxy ProducerIntIntInt)
   , monadLaws       (Proxy :: Proxy ProducerIntIntInt)
