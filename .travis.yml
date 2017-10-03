@@ -4,6 +4,8 @@ sudo: false
 cache:
   directories:
   - $HOME/.stack
+  - $HOME/.local/bin/
+  - .stack-work/
 
 before_install:
   # Download and unpack the stack executable
@@ -14,6 +16,6 @@ before_install:
 install:
   - travis_wait stack --no-terminal --skip-ghc-check setup
   - travis_wait stack --no-terminal --skip-ghc-check test --only-snapshot
-  
+
 script:
   - stack --no-terminal --skip-ghc-check test
