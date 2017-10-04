@@ -69,6 +69,9 @@ test_take = testGroup "take, drop, chunk" [
      runC (chunk n (one a)) == [[a]]
   ]
 
+test_runUnit = prop "runUnit" $ \(p :: ProducerInt) ->
+    runIdentity (runUnit p) == ()
+
 test_monad = testGroup "laws" [
     functorLaws     (Proxy :: Proxy ProducerIntIntInt)
   , applicativeLaws (Proxy :: Proxy ProducerIntIntInt)

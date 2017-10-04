@@ -27,6 +27,7 @@ module Streaming.Producer (
   , chunk
   , runList
   , runChunks
+  , runUnit
 ) where
 
 import           Control.Applicative   (liftA2)
@@ -160,6 +161,15 @@ chunkStream n (More as next) =
 -- |
 -- == Observations
 -- The following functions can "run" a Producer to get values back
+
+-- | return this Producer just for the side effects
+runUnit :: Monad m => Producer m a -> m ()
+runUnit (Producer ma) = ma >>= runUnitStream
+
+runUnitStream :: Monad m => Stream m a -> m ()
+runUnitStream Done          = pure ()
+runUnitStream (One _)       = pure ()
+runUnitStream (More _ next) =  runUnit next
 
 -- | return a list of values
 runList :: Monad m => Producer m a -> m [a]
